@@ -26,17 +26,20 @@ class _GroceryListState extends State<GroceryList> {
       });
     }
   }
-  void _removeItem(){
-    
+  void _removeItem(GroceryItem item) {
+    setState(() {
+      _groceryItems.remove(item);
+    });
+    for (var i = 0; i < _groceryItems.length; i++) {
+      print(_groceryItems[i].name);
+    }
   }
   @override
   Widget build(BuildContext context){
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Your Groceries"),
-        actions: [IconButton(onPressed: _addItem,icon:Icon(Icons.add_box))],
-      ),
-      body: ListView.builder(
+    Widget content = const Center(child: Text("please click the +  button to add an item"));
+    if(_groceryItems.isNotEmpty)
+    {
+      content = ListView.builder(
         itemCount: _groceryItems.length,
 
         itemBuilder:(ctx,index)=>ListTile(
@@ -50,7 +53,14 @@ class _GroceryListState extends State<GroceryList> {
           trailing: Text(_groceryItems[index].quantity.toString()),
 
         ) ,
+      );
+    }
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Your Groceries"),
+        actions: [IconButton(onPressed: _addItem,icon:Icon(Icons.add_box))],
       ),
+      body: content,  
     );
   }
 }
