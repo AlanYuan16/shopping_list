@@ -17,6 +17,7 @@ class GroceryList extends StatefulWidget {
 class _GroceryListState extends State<GroceryList> {
   List<GroceryItem> _groceryItems = [];
   var _isloading = true;
+  String? _error = "";
   @override
   void initState() {
     super.initState();
@@ -29,7 +30,12 @@ class _GroceryListState extends State<GroceryList> {
       'shopping-list.json',
     );
     final response = await http.get(url);
-
+    if (response.statusCode >= 400) {
+      setState(() {
+        _error = "Something went wrong. Please try again later.";
+      });
+      return;
+    }
     final Map<String, dynamic> listData = json.decode(response.body);
     final List<GroceryItem> _loadedItems = [];
     for (final item in listData.entries) {
@@ -65,12 +71,18 @@ class _GroceryListState extends State<GroceryList> {
     });
   }
 
-  void _removeItem(GroceryItem item) {
+  void _removeItem(GroceryItem item) async{
+    final index = _groceryItems.indexOf(item);
     setState(() {
       _groceryItems.remove(item);
     });
-    for (var i = 0; i < _groceryItems.length; i++) {
-      print(_groceryItems[i].name);
+    final url = Uri.https('shopping-list-a21ac-default-rtdb.firebaseio.com', 'shopping-list/${item.id}.json');
+    var response = await http.delete(url);
+    if(response.statusCode > 400)
+    {
+       setState(() {
+        _groceryItems.insert(index, item);
+    });
     }
   }
 
@@ -84,18 +96,29 @@ class _GroceryListState extends State<GroceryList> {
         child: CircularProgressIndicator(),
       );
     }
+    if(_error != null){
+      content = Center(
+        child: Text(_error!),
+      );
+    }
     if (_groceryItems.isNotEmpty) {
       content = ListView.builder(
         itemCount: _groceryItems.length,
 
-        itemBuilder: (ctx, index) => ListTile(
-          leading: Container(
-            width: 24,
-            height: 24,
-            color: _groceryItems[index].category.color,
+        itemBuilder: (ctx, index) => Dismissible(
+          key: ValueKey(_groceryItems[index].id),
+          onDismissed: (direction) {
+            _removeItem(_groceryItems[index]);
+          },
+          child: ListTile(
+            leading: Container(
+              width: 24,
+              height: 24,
+              color: _groceryItems[index].category.color,
+            ),
+            title: Text(_groceryItems[index].name),
+            trailing: Text(_groceryItems[index].quantity.toString()),
           ),
-          title: Text(_groceryItems[index].name),
-          trailing: Text(_groceryItems[index].quantity.toString()),
         ),
       );
     }
